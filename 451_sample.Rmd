@@ -107,7 +107,8 @@ pitches_2019 %<>%
   mutate(umpire_name = as.factor(umpire_name))
 
 # turning pitch type variable into dummy variables 
-pitches_2019 <- fastDummies::dummy_cols(pitches_2019,select_columns = c("pitch_type")) 
+pitches_2019 <- fastDummies::dummy_cols(pitches_2019,select_columns = c("pitch_type"))
+pitches_2019 <- pitches_2019[complete.cases(pitches_2019),]
 ```
 
 
