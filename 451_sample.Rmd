@@ -31,13 +31,20 @@ pitches_2019 %<>%
             "fielder_2", "hit_distance_sc", "launch_speed", "launch_angle", "pitcher_1", "fielder_3", "fielder_4", "fielder_5",
             "fielder_6", "fielder_7", "fielder_8", "fielder_9", "estimated_ba_using_speedangle", "estimated_woba_using_speedangle",
             "woba_value", "woba_denom", "babip_value", "iso_value", "launch_speed_angle", "at_bat_number", "pitch_number",
-            "pitch_name", "home_score", "away_score", "bat_score", "fld_score", "post_away_score", "post_home_score",
-            "post_bat_score", "post_fld_score", "if_fielding_alignment", "of_fielding_alignment", "barrel", "pitcher", "batter",
+            "pitch_name", "home_score", "away_score", "fld_score", "post_away_score", "post_home_score",
+            "post_fld_score", "if_fielding_alignment", "of_fielding_alignment", "barrel", "pitcher", "batter",
             "events", "des", "home_team", "away_team"))
 
-# for catcher framing only need pitches called by umpire (called strikes, balls (including blocked balls))
+
+# Convert the descriptions to strike/ball/hit/hit by pitch factors
+pitches_2019$description <- factor(pitches_2019$description,
+                                   levels = unique(pitches_2019$description),
+                                   labels = c("hit", "strike", "strike", "ball", "hit", "strike", "hit", "hit",
+                                              "hit", "strike", "hit_by_pitch", "strike", "strike", "strike", "strike"))
+
+# Filter out hit-by-pitch incidents
 pitches_2019 <- pitches_2019 %>%
-  filter(description == "called_strike" | description == "blocked_ball" | description == "ball")
+  filter(description != "hit_by_pitch")
 
 # turn on_3b/2b/1b into binary (yes/no) 
 pitches_2019 <- pitches_2019 %>%
