@@ -23,7 +23,7 @@ Data pre-processing.
 ```{r}
 # reading in data
 pitches_2019 <- read_csv("project_data.csv")
-
+get_player_id <- baseballr::playerid_lookup("Baez", "Javier")
 # getting rid of columns that the model won't need. 
 pitches_2019 %<>% 
   select(-c("spin_dir", "spin_rate_deprecated", "break_angle_deprecated", "break_length_deprecated", "game_type", "type",
