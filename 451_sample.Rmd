@@ -61,11 +61,6 @@ pitches_2019 <- pitches_2019[!(pitches_2019$pitch_type =="KN"  |
                          pitches_2019$pitch_type =="EP" |
                          pitches_2019$pitch_type =="FO"),]
 
-# turn description (called strike/ball) into binary (yes/no)
-pitches_2019 <- pitches_2019 %>%
-  mutate(is_strike = ifelse(description == "called_strike", 1, 0)) %>%
-  select(-c("description"))
-
 # player look up by mlbam key
 chadiwck_reduced <- chadwick_player_lu_table %>% select (key_mlbam, name_last, name_first)
 # remove NA to make df smaller
