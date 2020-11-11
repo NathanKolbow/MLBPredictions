@@ -14,7 +14,7 @@ y = df.pop("description").values
 y_lookup, y = np.unique(y, return_inverse = True)
 X = df.values
 
-X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=.3,stratify=y)
+X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=.3,stratify=y,random_state=123,shuffle=True)
 
 subs = [.1, .3, .5, .7, .9, 1]
 sub_gbms = []
@@ -23,7 +23,7 @@ for sub in subs:
     sub_gbms.append(gb_classifier(subsample=sub,learning_rate=.1,max_depth=25,n_estimators=100))
 
 for gbm in sub_gbms:
-    gbm.fit(X_train,y_train)
+    gbm.fit(X_train[0:100000],y_train[0:100000])
     sub_scores.append(gbm.score(X_test, y_test))
     
 best_sub_arg = np.argmax(np.array(sub_scores))
@@ -37,7 +37,7 @@ for depth in depths:
     depth_gbms.append(gb_classifier(subsample=best_sub,learning_rate=.1,max_depth=depth,n_estimators=100))
 
 for gbm in depth_gbms:
-    gbm.fit(X_train,y_train)
+    gbm.fit(X_train[0:100000],y_train[0:100000])
     depth_scores.append(gbm.score(X_test, y_test))
     
 best_depth_arg = np.argmax(np.array(depth_scores))
@@ -51,7 +51,7 @@ for rate in rates:
     rate_gbms.append(gb_classifier(subsample=best_sub,learning_rate=rate,max_depth=best_depth,n_estimators=100))
     
 for gbm in rate_gbms:
-    gbm.fit(X_train,y_train)
+    gbm.fit(X_train[0:100000],y_train[0:100000])
     rate_scores.append(gbm.score(X_test, y_test))
     
 best_rate_arg = np.argmax(np.array(rate_scores))
@@ -65,7 +65,7 @@ for nest in nests:
     nest_gbms.append(gb_classifier(subsample=best_sub,learning_rate=best_rate,max_depth=best_depth,n_estimators=nest))
     
 for gbm in nest_gbms:
-    gbm.fit(X_train,y_train)
+    gbm.fit(X_train[0:100000],y_train[0:100000])
     nest_scores.append(gbm.score(X_test, y_test))
     
 best_nest_arg = np.argmax(np.array(nest_scores))
