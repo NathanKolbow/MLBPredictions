@@ -22,6 +22,8 @@ y = df.pop("description").values
 y_lookup, y = np.unique(y, return_inverse = True)
 X = df.values
 
+print(df.columns)
+
 X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=.3,stratify=y,random_state=42)
 
 gbm = gb_classifier(subsample=0.7, learning_rate=0.1, max_depth=5, n_estimators=300, verbose=1)

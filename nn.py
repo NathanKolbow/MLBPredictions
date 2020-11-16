@@ -39,8 +39,16 @@ def build_nn_model():
     # 64, 64: 67.4%
     # 32, 64, 32: ~67%
     # 64, 64, 64, 64: 68.2%
+    # 64, 64, 64, 64, 64: 61%
+    # 32, 64, 64, 64, 32: 67%
+    # 32, 64, 32, 64, 32: 
+    # 'zone' removed
+    # 64, 64, 64, 64: 67%
+    # 64, 64, 64, 64, 64: 68.6%
     nn_model = models.Sequential([
-        layers.Flatten(input_shape=(27,)),
+        layers.Flatten(input_shape=(26,)),
+        layers.Dense(64, activation='relu'),
+        layers.Dense(64, activation='relu'),
         layers.Dense(64, activation='relu'),
         layers.Dense(64, activation='relu'),
         layers.Dense(64, activation='relu'),
@@ -62,7 +70,7 @@ if __name__ == '__main__':
 
     # THESE ARE FEATURES THAT ACCOUNTED FOR LESS THAN 1% OF FEATURE IMPORTANCE IN TOTAL AFTER
     # FITTING THE FIRST "FINAL" GBM MODEL
-    to_pop = ["was_3_0","pitch_type_FF","release_speed","inning","was_2_0","release_extension","outs_when_up","pitch_type_CH","was_3_2","pitch_type_SI","pitch_type_FT","pitch_type_FC","bat_score","post_bat_score","pitch_type_CU","was_3_1","pitch_type_FS","was_1_1","was_0_1","was_2_1","was_1_2","was_2_2","was_0_2","description"]
+    to_pop = ["was_3_0","pitch_type_FF","release_speed","inning","was_2_0","release_extension","outs_when_up","pitch_type_CH","was_3_2","pitch_type_SI","pitch_type_FT","pitch_type_FC","bat_score","post_bat_score","pitch_type_CU","was_3_1","pitch_type_FS","was_1_1","was_0_1","was_2_1","was_1_2","was_2_2","was_0_2","description","zone"]
     for item in to_pop:
         df.pop(item)
     X = df.values
