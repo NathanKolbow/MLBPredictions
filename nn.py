@@ -38,7 +38,7 @@ def build_nn_model():
     # train=80%, test=20%, no valid, only early-stopping on loss
     # 64, 64: 67.4%
     # 32, 64, 32: ~67%
-    # 64, 64, 64, 64: 
+    # 64, 64, 64, 64: 68.2%
     nn_model = models.Sequential([
         layers.Flatten(input_shape=(27,)),
         layers.Dense(64, activation='relu'),
