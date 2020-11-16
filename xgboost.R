@@ -29,7 +29,7 @@ pitches_test %<>% select(-c("game_date", "zone", "pitcher_name", "catcher_name",
                             "stand", "p_throws", "balls", "strikes", "outs_when_up", "inning", "inning_topbot", "on_3b_yes_no", 
                             "on_2b_yes_no", "on_1b_yes_no"))
 
-pitches_folds <- vfold_cv(pitches_train, strate = description)
+pitches_folds <- vfold_cv(pitches_train, strata = description)
 
 #prepping the model
 pitches_recipe <- recipe(description ~., data = pitches_train)
