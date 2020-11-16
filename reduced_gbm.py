@@ -3,10 +3,8 @@ import numpy as np
 from sklearn.ensemble import GradientBoostingClassifier as gb_classifier
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import Normalizer
-
 from joblib import dump
 
-gbm = gb_classifier(subsample=0.7, learning_rate=0.1, max_depth=5, n_estimators=300, verbose=1)
 
 df = pd.read_csv("pitches.csv")
 
@@ -25,8 +23,10 @@ y_lookup, y = np.unique(y, return_inverse = True)
 X = df.values
 
 X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=.3,stratify=y,random_state=42)
+
+gbm = gb_classifier(subsample=0.7, learning_rate=0.1, max_depth=5, n_estimators=300, verbose=1)
 gbm.fit(X_train, y_train)
 
 print(gbm.score(X_test, y_test))
 print(gbm.feature_importances_)
-dump(gbm, 'single_gpm.py.joblib')
+dump(gbm, 'reduced_gbm.py.joblib')
