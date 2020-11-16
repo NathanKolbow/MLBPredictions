@@ -103,38 +103,5 @@ toc()
 #model results
 collect_metrics(final_mod)
 
-final_mod %>%
-  collect_predictions() %>%
-  roc_curve(is_strike, .pred_0) %>%
-  ggplot(aes(x = 1 - specificity, y = sensitivity)) +
-  geom_line(size = 1.5, color = "midnightblue") +
-  xlab('1 - Specificity') +
-  ylab('Sensitivity') +
-  geom_abline(
-    lty = 2, alpha = 0.5,
-    color = "gray50",
-    size = 1.2
-  ) +
-  ggtitle('ROC Curve') +
-  theme_minimal()
-
-final_mod %>%
-  collect_predictions() %>%
-  mutate(pred_rounded = round(.pred_1,1)) %>%
-  group_by(pred_rounded) %>%
-  summarise(mean_prediction = mean(.pred_1),
-            mean_actual = mean(as.numeric(is_strike) - 1),
-            n = n(),
-            se = sd(as.numeric(is_strike) - 1 - .pred_1)/sqrt(n)) %>%
-  ggplot(aes(x = pred_rounded, y = mean_actual)) +
-  geom_abline() +
-  geom_point(aes(size = n)) +
-  theme_minimal() +
-  xlab('Predicted Probability') +
-  ylab('Actual Probability') +
-  ggtitle('Calibration Plot, Test Data') +
-  ylim(0,1) +
-  xlim(0,1)
-
 
 
