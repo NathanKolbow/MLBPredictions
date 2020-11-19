@@ -1,8 +1,12 @@
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import LabelEncoder
 from keras.utils import np_utils
 import keras
+from joblib import dump
 
 
 import tensorflow as tf
@@ -10,55 +14,53 @@ from tensorflow.keras import models,layers
 from tensorflow.keras.wrappers.scikit_learn import KerasClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
+from sklearn.model_selection import GridSearchCV
 
 
 # Source: https://machinelearningmastery.com/multi-class-classification-tutorial-keras-deep-learning-library/
 
-model = None
 
-def build_nn_model():
-    global model
-    # 32, 32, 32, 32: ~67% acc
-    # 24, 24, 24, 24: ~66.5% acc
-    # 64, 64, 64, 64: ~67% acc
-    # 64, 64, 64, 64, 64, 64, 64, 64: ~36% acc
-    # 4x32: ~36% acc
-    # 4x16: ~36% acc
-    #
-    # Added pitcher_name to the onehot data
-    # 32, 32, 32, 32: ~67%
-    # train=80%, test=10%, valid=10%
-    # 32, 32, 32, 32: ~64%
-    # train=50%, test=10%, valid=40%
-    # 32, 32, 32, 32: ~58%
-    # train=70%, test=15%, valid=15%
-    # 512, 128, 32, 32: 67%
-    # Now using only the 27 variables from GBM feature selection
-    # 64, 64: 67.7%
-    # train=80%, test=20%, no valid, only early-stopping on loss
-    # 64, 64: 67.4%
-    # 32, 64, 32: ~67%
-    # 64, 64, 64, 64: 68.2%
-    # 64, 64, 64, 64, 64: 61%
-    # 32, 64, 64, 64, 32: 67%
-    # 32, 64, 32, 64, 32: 
-    # 'zone' removed
-    # 64, 64, 64, 64: 67%
-    # 64, 64, 64, 64, 64: 68.6%
-    nn_model = models.Sequential([
-        layers.Flatten(input_shape=(26,)),
-        layers.Dense(64, activation='relu'),
-        layers.Dense(64, activation='relu'),
-        layers.Dense(64, activation='relu'),
-        layers.Dense(64, activation='relu'),
-        layers.Dense(64, activation='relu'),
-        layers.Dense(64, activation='relu'),
-        layers.Dense(3, activation='softmax')
-    ])
-    opt = keras.optimizers.Adam(learning_rate=0.005)
-    nn_model.compile(loss='categorical_crossentropy', optimizer=opt, metrics=['accuracy'])
-    model = nn_model
-    return nn_model
+class KerasGridOptimizer():
+    def __init__(self, epochs=10, n_layers=1, n_nodes=32, learning_rate=5e-4, batch_size=128):
+        self._epochs = epochs
+        self._n_layers = n_layers
+        self._n_nodes = n_nodes
+        self._learn_rate = learning_rate
+        self._batch_size = batch_size
+        
+    def get_params(self, deep=False):
+        return { 'epochs':self._epochs, 'n_layers':self._n_layers, 'n_nodes':self._n_nodes }
+        
+    def set_params(self, epochs=None, n_layers=None, n_nodes=None, learning_rate=None, batch_size=None):
+        if epochs is not None:
+            self._epochs = epochs
+        if n_layers is not None:
+            self._n_layers = n_layers
+        if n_nodes is not None:
+            self._n_nodes = n_nodes
+        if learning_rate is not None:
+            self._learn_rate = learning_rate
+        if batch_size is not None:
+            self._batch_size = batch_size
+        return self
+        
+    def fit(self, X, y):
+        self._model = models.Sequential()
+        self._model.add(layers.Flatten(input_shape=(26,)))
+        for i in range(self._n_layers):
+            self._model.add(layers.Dense(self._n_nodes, activation='relu'))
+        self._model.add(layers.Dense(3, activation='softmax'))
+            
+        opt = keras.optimizers.Adam(learning_rate=self._learn_rate)
+        self._model.compile(loss='categorical_crossentropy', optimizer=opt, metrics=['accuracy'])
+        
+        self._est = KerasClassifier(build_fn=lambda:self._model, epochs=self._epochs, verbose=0, batch_size=self._batch_size)
+        
+        self._est.fit(X, y)
+        
+    def score(self, X, y):
+        return self._est.score(X, y)
+    
     
 
 if __name__ == '__main__':
@@ -77,14 +79,19 @@ if __name__ == '__main__':
     
     y = np.load('nn_y.npy')
     
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2, stratify=y, random_state=42, shuffle=True)
     
-    estimator = KerasClassifier(build_fn=build_nn_model, epochs=5000, verbose=1, batch_size=128,
-                                callbacks=[tf.keras.callbacks.EarlyStopping(monitor='loss', patience=50, restore_best_weights=True)])
-    estimator.fit(X_train, y_train)
+    model = KerasGridOptimizer()
+    param_gr = dict(epochs=[25, 75, 150, 250, 400], 
+                    n_layers=[1, 2, 4, 8, 16, 32, 64, 128],
+                    n_nodes=[1, 2, 4, 8, 16, 32, 64, 128, 256],
+                    learning_rate=[0.5, 0.01, 0.001],
+                    batch_size=[128, 1024, 8192]
+                   )
+    grid = GridSearchCV(estimator=model, param_grid=param_gr, verbose=2, n_jobs=-1, cv=3)
+    print("Fitting grid.")
+    grid.fit(X, y)
+    dump(grid, filename='gridcv.joblib')
     
-    print(estimator.score(X_test, y_test))
-
-    model.save_weights('nn.py.wts')
+    print("Best score: %s" % grid.best_score_)
+    print("Best params: %s" % grid.best_params_)
     
-        
