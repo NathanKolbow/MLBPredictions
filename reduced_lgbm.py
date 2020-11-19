@@ -26,24 +26,21 @@ X = df.values
 
 print(df.columns)
 
-X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=.3,stratify=y,random_state=123,shuffle=True)
-
-# subsample, subsample_freq, reg_alpha, reg_lambda, importance_type='split'/'gain'
 model_params = {
     'num_leaves': randint(5, 500),
     'max_depth': [-1, 50, 100, 1000, 10000],
     'learning_rate': uniform(.001, 1),
-    'n_estimators': [10, 100, 150, 300, 500, 1000, 10000],
+    'n_estimators': [100, 200, 500, 1000, 10000],
     'min_split_gain': [0, .001, .01, .1],
-    'subsample': [.1, .3, .5, .7, .9, 1],
+    'subsample': [.1, .3, .5, .8, 1],
     'importance_type': ['split', 'gain']
 }
 model = lgb.LGBMClassifier(class_weight='balanced', random_state=123, n_jobs=-1, silent=False)
-paramSearchCV = RandomizedSearchCV(estimator=model, param_distributions=model_params, n_iter=1, n_jobs=-1, cv=3)
+paramSearchCV = RandomizedSearchCV(estimator=model, param_distributions=model_params, n_iter=500, n_jobs=-1, cv=3)
 
 print("searching for best params")
 
-paramSearchCV.fit(X_train, y_train)
+paramSearchCV.fit(X[1:50000], y[1:50000])
 print("Best score: %s" % paramSearchCV.best_score_)
 print("Best params: %s" % paramSearchCV.best_params_)
 
