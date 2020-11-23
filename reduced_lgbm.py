@@ -26,22 +26,34 @@ X = df.values
 
 print(df.columns)
 
+X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=.3,stratify=y,random_state=123)
+
 model_params = {
     'num_leaves': randint(5, 500),
-    'max_depth': [-1, 50, 100, 1000, 10000],
+    'max_depth': [-1, 50, 100, 1000, 2000],
     'learning_rate': uniform(.001, 1),
-    'n_estimators': [100, 200, 500, 1000, 10000],
-    'min_split_gain': [0, .001, .01, .1],
+    'num_iterations': [200, 500, 1000, 10000, 20000],
+    'min_split_gain': [0, .001, .01, .1, .2, .3],
     'subsample': [.1, .3, .5, .8, 1],
+    'n_iter_no_change':[15, 30, 45, 60, 100],
     'importance_type': ['split', 'gain']
 }
-model = lgb.LGBMClassifier(class_weight='balanced', random_state=123, n_jobs=-1, silent=False)
+model = lgb.LGBMClassifier(class_weight='balanced', random_state=42, n_jobs=-1, silent=True)
 paramSearchCV = RandomizedSearchCV(estimator=model, param_distributions=model_params, n_iter=500, n_jobs=-1, cv=3)
 
-print("searching for best params")
+print("Searching for best params (500 iter) ...")
 
-paramSearchCV.fit(X[1:50000], y[1:50000])
+paramSearchCV.fit(X_train[1:200000], y_train[1:200000], eval_set=(X_test, y_test))
 print("Best score: %s" % paramSearchCV.best_score_)
 print("Best params: %s" % paramSearchCV.best_params_)
 
+best_model = model.set_params(**paramSearchCV.best_params_)
+
+print("Fitting best model (all records) ... ")
+best_model.fit(X_train, y_train, eval_set=(X_test, y_test))
+
+print("Best model score: %s" % best_model.score(X_test, y_test))
+print("Best model params: %s" % best_model.get_params)
+
 dump(paramSearchCV, filename='reduced_lgbm.randcv.joblib')
+dump(best_model, filename='reduced_lgbm.bestlgbm.joblib')
