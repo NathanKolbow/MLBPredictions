@@ -53,7 +53,7 @@ gbm_cv_acc = cross_val_score(estimator=gbm,
                          n_jobs=-1) # very necessary
 end_gbm_cv = time.perf_counter()
 print('GBM 10-fold Accuracy: %.2f%%' % (np.mean(gbm_cv_acc)*100))
-print(f"10-fold CV on GBM with 100000 examples took {(end_gbm_cv - start_gbm_cv):0.4f} seconds")
+print(f"10-fold CV on GBM with all training records took {(end_gbm_cv - start_gbm_cv):0.4f} seconds")
 
 
 lgbm_bootstrap_train_accuracies = []
