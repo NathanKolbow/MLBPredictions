@@ -10,6 +10,7 @@ from joblib import dump
 from scipy.stats import uniform, randint
 from mlxtend.evaluate import bootstrap_point632_score
 import matplotlib.pyplot as plt
+from sklearn.model_selection import cross_val_score
 
 
 df = pd.read_csv("pitches.csv")
@@ -33,7 +34,7 @@ print(df.columns)
 # X_train_temp, X_test, y_train_temp, y_test = train_test_split(X,y,test_size=.2,stratify=y,random_state=123)
 # X_train, X_valid, y_train, y_valid = train_test_split(X_train_temp,y_train_temp,test_size=.3,stratify=y,random_state=1415)
 
-X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=.3,stratify=y,random_state=123)
+X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=.3,stratify=y,random_state=123) # only need the validation set if we are parameter tuning
 
 gbm = gb_classifier(subsample=0.9, max_depth=100, verbose=1) # setting max_depth high because LGBMClassifier default max_depth=-1
 lgbm = lgb.LGBMClassifier(num_class=3, boosting_type='gbdt', class_weight='balanced', importance_type='gain', min_split_gain=.25, subsample=.9, subsample_freq=1, feature_fraction=.9, random_state=42, n_jobs=-1, silent=True)
@@ -41,12 +42,18 @@ dart = lgb.LGBMClassifier(num_class=3, boosting_type='dart', class_weight='balan
 goss = lgb.LGBMClassifier(num_class=3, boosting_type='goss', class_weight='balanced', importance_type='gain', min_split_gain=.25, random_state=42, n_jobs=-1, silent=True)
 
 
+# Need to do this because normal gbm takes too long in the for loop
+gbm_cv_acc = cross_val_score(estimator=gbm,
+                         X=X_train[1:100000],
+                         y=y_train[1:100000],
+                         cv=10,
+                         n_jobs=-1) # very necessary
+print('GBM 10-fold Accuracy: %.2f%%' % (np.mean(gbm_cv_acc)*100))
 
 
 rng = np.random.RandomState(seed=12345)
 idx = np.arange(y_train.shape[0])
 
-gbm_bootstrap_train_accuracies = []
 lgbm_bootstrap_train_accuracies = []
 dart_bootstrap_train_accuracies = []
 goss_bootstrap_train_accuracies = []
@@ -58,61 +65,45 @@ for i in range(50):
     boot_train_X, boot_train_y = X_train[train_idx], y_train[train_idx]
     boot_test_X, boot_test_y = X_train[test_idx], y_train[test_idx]
     
-    gbm.fit(boot_train_X, boot_train_y)
     lgbm.fit(boot_train_X, boot_train_y)
     dart.fit(boot_train_X, boot_train_y)
     goss.fit(boot_train_X, boot_train_y)
 
-    gbm_bootstrap_train_accuracies.append(gbm.score(boot_test_X, boot_test_y))
     lgbm_bootstrap_train_accuracies.append(lgbm.score(boot_test_X, boot_test_y))
     dart_bootstrap_train_accuracies.append(dart.score(boot_test_X, boot_test_y))
     goss_bootstrap_train_accuracies.append(goss.score(boot_test_X, boot_test_y))
 
-gbm_bootstrap_train_mean = np.mean(gbm_bootstrap_train_accuracies)
+gbm_cv_acc_mean = np.mean(gbm_cv_acc)
 lgbm_bootstrap_train_mean = np.mean(lgbm_bootstrap_train_accuracies)
 dart_bootstrap_train_mean = np.mean(dart_bootstrap_train_accuracies)
 goss_bootstrap_train_mean = np.mean(goss_bootstrap_train_accuracies)
 
-gbm_bootstrap_percentile_lower = np.percentile(gbm_bootstrap_train_accuracies, 2.5)
-gbm_bootstrap_percentile_upper = np.percentile(gbm_bootstrap_train_accuracies, 97.5)
-print("GBM 95% CI:")
+
+gbm_bootstrap_percentile_lower = np.percentile(gbm_cv_acc, 2.5)
+gbm_bootstrap_percentile_upper = np.percentile(gbm_cv_acc, 97.5)
+print("GBM 95% CI (10-fold CV):")
 print(gbm_bootstrap_percentile_lower, gbm_bootstrap_percentile_upper)
-print("Mean: ", gbm_bootstrap_train_mean)
+print("Mean: ", gbm_cv_acc_mean)
 
 lgbm_bootstrap_percentile_lower = np.percentile(lgbm_bootstrap_train_accuracies, 2.5)
 lgbm_bootstrap_percentile_upper = np.percentile(lgbm_bootstrap_train_accuracies, 97.5)
-print("LGBM 95% CI:")
+print("LGBM 95% Bootstrap CI:")
 print(lgbm_bootstrap_percentile_lower, lgbm_bootstrap_percentile_upper)
 print("Mean: ", lgbm_bootstrap_train_mean)
 
 dart_bootstrap_percentile_lower = np.percentile(dart_bootstrap_train_accuracies, 2.5)
 dart_bootstrap_percentile_upper = np.percentile(dart_bootstrap_train_accuracies, 97.5)
-print("DART 95% CI:")
+print("DART 95% Bootstrap CI:")
 print(dart_bootstrap_percentile_lower, dart_bootstrap_percentile_upper)
 print("Mean: ", dart_bootstrap_train_mean)
 
 goss_bootstrap_percentile_lower = np.percentile(goss_bootstrap_train_accuracies, 2.5)
 goss_bootstrap_percentile_upper = np.percentile(goss_bootstrap_train_accuracies, 97.5)
-print("GOSS 95% CI:")
+print("GOSS 95% Bootstrap CI:")
 print(goss_bootstrap_percentile_lower, goss_bootstrap_percentile_upper)
 print("Mean: ", goss_bootstrap_train_mean)
 
 
-fig, ax = plt.subplots(figsize=(8, 4))
-ax.vlines( gbm_bootstrap_train_mean, [0], 80, lw=2.5, linestyle='-', label='gbm bootstrap train mean')
-ax.vlines(gbm_bootstrap_percentile_upper, [0], 15, lw=2.5, linestyle='dashed', 
-          label='CI95 bootstrap, percentile', color='C1')
-ax.vlines(gbm_bootstrap_percentile_lower, [0], 15, lw=2.5, linestyle='dashed', color='C1')
-
-ax.hist(gbm_bootstrap_train_accuracies, bins=7,
-        color='#0080ff', edgecolor="none", 
-        alpha=0.3)
-plt.legend(loc='upper left')
-plt.xlim([0.6, 0.81])
-plt.tight_layout()
-plt.savefig('figures/gbm-bootstrap-ci-histo.svg')
-# plt.show()
-plt.clf()
 
 fig, ax = plt.subplots(figsize=(8, 4))
 ax.vlines( lgbm_bootstrap_train_mean, [0], 80, lw=2.5, linestyle='-', label='lgbm bootstrap train mean')
