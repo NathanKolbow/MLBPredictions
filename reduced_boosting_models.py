@@ -46,13 +46,13 @@ goss = lgb.LGBMClassifier(num_class=3, boosting_type='goss', class_weight='balan
 
 # Need to do this because normal gbm takes too long in the for loop
 start_gbm_cv = time.perf_counter()
-# gbm_cv_acc = cross_val_score(estimator=gbm,
-#                          X=X_train[1:100000],
-#                          y=y_train[1:100000],
-#                          cv=10,
-#                          n_jobs=-1) # very necessary
+gbm_cv_acc = cross_val_score(estimator=gbm,
+                         X=X_train[1:100000],
+                         y=y_train[1:100000],
+                         cv=10,
+                         n_jobs=-1) # very necessary
 end_gbm_cv = time.perf_counter()
-# print('GBM 10-fold Accuracy: %.2f%%' % (np.mean(gbm_cv_acc)*100))
+print('GBM 10-fold Accuracy: %.2f%%' % (np.mean(gbm_cv_acc)*100))
 print(f"10-fold CV on GBM with 100000 examples took {(end_gbm_cv - start_gbm_cv):0.4f} seconds")
 
 
@@ -63,16 +63,16 @@ goss_bootstrap_train_accuracies = []
 idx = np.arange(y_train.shape[0])
 rng = np.random.RandomState(seed=12345)
 start_lgbm_bootstrap = time.perf_counter()
-# for i in range(50):
-#     train_idx = rng.choice(idx, size=idx.shape[0], replace=True)
-#     test_idx = np.setdiff1d(idx, train_idx, assume_unique=False)
+for i in range(50):
+    train_idx = rng.choice(idx, size=idx.shape[0], replace=True)
+    test_idx = np.setdiff1d(idx, train_idx, assume_unique=False)
     
-#     boot_train_X, boot_train_y = X_train[train_idx], y_train[train_idx]
-#     boot_test_X, boot_test_y = X_train[test_idx], y_train[test_idx]
+    boot_train_X, boot_train_y = X_train[train_idx], y_train[train_idx]
+    boot_test_X, boot_test_y = X_train[test_idx], y_train[test_idx]
     
-#     lgbm.fit(boot_train_X, boot_train_y)
+    lgbm.fit(boot_train_X, boot_train_y)
 
-#     lgbm_bootstrap_train_accuracies.append(lgbm.score(boot_test_X, boot_test_y))
+    lgbm_bootstrap_train_accuracies.append(lgbm.score(boot_test_X, boot_test_y))
 end_lgbm_bootstrap = time.perf_counter()
 print(f"50 rounds bootstrap LGBM took {end_lgbm_bootstrap - start_lgbm_bootstrap:0.4f} seconds")
 print(f"Avg: {(end_lgbm_bootstrap - start_lgbm_bootstrap)/50.0:0.4f} seconds")
