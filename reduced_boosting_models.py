@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import lightgbm as lgb
+from sklearn.ensemble import GradientBoostingClassifier as gb_classifier
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.model_selection import GridSearchCV
@@ -29,9 +30,12 @@ X = df.values
 
 print(df.columns)
 
-X_train_temp, X_test, y_train_temp, y_test = train_test_split(X,y,test_size=.2,stratify=y,random_state=123)
-X_train, X_valid, y_train, y_valid = train_test_split(X,y,test_size=.3,stratify=y,random_state=1415)
+# X_train_temp, X_test, y_train_temp, y_test = train_test_split(X,y,test_size=.2,stratify=y,random_state=123)
+# X_train, X_valid, y_train, y_valid = train_test_split(X_train_temp,y_train_temp,test_size=.3,stratify=y,random_state=1415)
 
+X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=.3,stratify=y,random_state=123)
+
+gbm = gb_classifier(subsample=0.9,, max_depth=500, verbose=1) # setting max_depth high because LGBMClassifier default max_depth=-1
 lgbm = lgb.LGBMClassifier(num_class=3, boosting_type='gbdt', class_weight='balanced', importance_type='gain', min_split_gain=.25, subsample=.9, subsample_freq=1, feature_fraction=.9, random_state=42, n_jobs=-1, silent=True)
 dart = lgb.LGBMClassifier(num_class=3, boosting_type='dart', class_weight='balanced', importance_type='gain', min_split_gain=.25, subsample=.9, subsample_freq=1, feature_fraction=.9, random_state=42, n_jobs=-1, silent=True)
 goss = lgb.LGBMClassifier(num_class=3, boosting_type='goss', class_weight='balanced', importance_type='gain', min_split_gain=.25, random_state=42, n_jobs=-1, silent=True)
