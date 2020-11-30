@@ -76,21 +76,21 @@ if __name__ == '__main__':
     for item in to_pop:
         df.pop(item)
     X = df.values
-    
     y = np.load('nn_y.npy')
     
+    X = X[0:50000, :]
+    y = y[0:50000, :]
     
     model = KerasGridOptimizer()
-    param_gr = dict(epochs=[25, 75, 150, 250, 400], 
-                    n_layers=[1, 2, 4, 8, 16, 32, 64, 128],
-                    n_nodes=[1, 2, 4, 8, 16, 32, 64, 128, 256],
-                    learning_rate=[0.5, 0.01, 0.001],
-                    batch_size=[128, 1024, 8192]
+    param_gr = dict(epochs=[200, 400], 
+                    n_layers=[2, 8, 32, 64, 128],
+                    n_nodes=[1, 2, 4, 8, 16, 32, 64, 256],
+                    learning_rate=[0.5, 0.001],
+                    batch_size=[256]
                    )
-    grid = GridSearchCV(estimator=model, param_grid=param_gr, verbose=2, n_jobs=-1, cv=3)
+    grid = GridSearchCV(estimator=model, param_grid=param_gr, verbose=2, n_jobs=3, cv=3)
     print("Fitting grid.")
     grid.fit(X, y)
-    dump(grid, filename='gridcv.joblib')
     
     print("Best score: %s" % grid.best_score_)
     print("Best params: %s" % grid.best_params_)
