@@ -36,7 +36,7 @@ print(df.columns)
 
 X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=.3,stratify=y,random_state=123) # only need the validation set if we are parameter tuning
 
-gbm = gb_classifier(subsample=0.9, max_depth=100, verbose=1) # setting max_depth high because LGBMClassifier default max_depth=-1
+gbm = gb_classifier(subsample=0.9, verbose=1)
 lgbm = lgb.LGBMClassifier(num_class=3, boosting_type='gbdt', class_weight='balanced', importance_type='gain', min_split_gain=.25, subsample=.9, subsample_freq=1, feature_fraction=.9, random_state=42, n_jobs=-1, silent=True)
 dart = lgb.LGBMClassifier(num_class=3, boosting_type='dart', class_weight='balanced', importance_type='gain', min_split_gain=.25, subsample=.9, subsample_freq=1, feature_fraction=.9, random_state=42, n_jobs=-1, silent=True)
 goss = lgb.LGBMClassifier(num_class=3, boosting_type='goss', class_weight='balanced', importance_type='gain', min_split_gain=.25, random_state=42, n_jobs=-1, silent=True)
