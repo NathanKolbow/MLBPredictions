@@ -47,8 +47,8 @@ goss = lgb.LGBMClassifier(num_class=3, boosting_type='goss', class_weight='balan
 # Need to do this because normal gbm takes too long in the for loop
 start_gbm_cv = time.perf_counter()
 gbm_cv_acc = cross_val_score(estimator=gbm,
-                         X=X_train[1:100000],
-                         y=y_train[1:100000],
+                         X=X_train,
+                         y=y_train,
                          cv=10,
                          n_jobs=-1) # very necessary
 end_gbm_cv = time.perf_counter()
@@ -63,7 +63,7 @@ goss_bootstrap_train_accuracies = []
 idx = np.arange(y_train.shape[0])
 rng = np.random.RandomState(seed=12345)
 start_lgbm_bootstrap = time.perf_counter()
-for i in range(50):
+for i in range(100):
     train_idx = rng.choice(idx, size=idx.shape[0], replace=True)
     test_idx = np.setdiff1d(idx, train_idx, assume_unique=False)
     
@@ -74,14 +74,14 @@ for i in range(50):
 
     lgbm_bootstrap_train_accuracies.append(lgbm.score(boot_test_X, boot_test_y))
 end_lgbm_bootstrap = time.perf_counter()
-print(f"50 rounds bootstrap LGBM took {end_lgbm_bootstrap - start_lgbm_bootstrap:0.4f} seconds")
-print(f"Avg: {(end_lgbm_bootstrap - start_lgbm_bootstrap)/50.0:0.4f} seconds")
+print(f"100 rounds bootstrap LGBM took {end_lgbm_bootstrap - start_lgbm_bootstrap:0.4f} seconds")
+print(f"Avg: {(end_lgbm_bootstrap - start_lgbm_bootstrap)/100.0:0.4f} seconds")
 
 
 idx = np.arange(y_train.shape[0])
 rng = np.random.RandomState(seed=12345)
 start_dart_bootstrap = time.perf_counter()
-for i in range(50):
+for i in range(100):
     train_idx = rng.choice(idx, size=idx.shape[0], replace=True)
     test_idx = np.setdiff1d(idx, train_idx, assume_unique=False)
     
@@ -92,14 +92,14 @@ for i in range(50):
 
     dart_bootstrap_train_accuracies.append(dart.score(boot_test_X, boot_test_y))
 end_dart_bootstrap = time.perf_counter()
-print(f"50 rounds bootstrap DART took {end_dart_bootstrap - start_dart_bootstrap:0.4f} seconds")
-print(f"Avg: {(end_dart_bootstrap - start_dart_bootstrap)/50.0:0.4f} seconds")
+print(f"100 rounds bootstrap DART took {end_dart_bootstrap - start_dart_bootstrap:0.4f} seconds")
+print(f"Avg: {(end_dart_bootstrap - start_dart_bootstrap)/100.0:0.4f} seconds")
 
 
 idx = np.arange(y_train.shape[0])
 rng = np.random.RandomState(seed=12345)
 start_goss_bootstrap = time.perf_counter()
-for i in range(50):
+for i in range(100):
     train_idx = rng.choice(idx, size=idx.shape[0], replace=True)
     test_idx = np.setdiff1d(idx, train_idx, assume_unique=False)
     
@@ -110,8 +110,8 @@ for i in range(50):
 
     goss_bootstrap_train_accuracies.append(goss.score(boot_test_X, boot_test_y))
 end_goss_bootstrap = time.perf_counter()
-print(f"50 rounds bootstrap GOSS took {end_goss_bootstrap - start_goss_bootstrap:0.4f} seconds")
-print(f"Avg: {(end_goss_bootstrap - start_goss_bootstrap)/50.0:0.4f} seconds")
+print(f"100 rounds bootstrap GOSS took {end_goss_bootstrap - start_goss_bootstrap:0.4f} seconds")
+print(f"Avg: {(end_goss_bootstrap - start_goss_bootstrap)/100.0:0.4f} seconds")
 
 
 gbm_cv_acc_mean = np.mean(gbm_cv_acc)
@@ -156,7 +156,7 @@ ax.hist(lgbm_bootstrap_train_accuracies, bins=7,
         color='#0080ff', edgecolor="none", 
         alpha=0.3)
 plt.legend(loc='upper left')
-plt.xlim([0.6, 0.81])
+plt.xlim([0.69, 0.75])
 plt.tight_layout()
 plt.savefig('figures/lgbm-bootstrap-ci-histo.svg')
 # plt.show()
@@ -172,7 +172,7 @@ ax.hist(dart_bootstrap_train_accuracies, bins=7,
         color='#0080ff', edgecolor="none", 
         alpha=0.3)
 plt.legend(loc='upper left')
-plt.xlim([0.6, 0.81])
+plt.xlim([0.69, 0.75])
 plt.tight_layout()
 plt.savefig('figures/dart-bootstrap-ci-histo.svg')
 # plt.show()
@@ -188,7 +188,7 @@ ax.hist(goss_bootstrap_train_accuracies, bins=7,
         color='#0080ff', edgecolor="none", 
         alpha=0.3)
 plt.legend(loc='upper left')
-plt.xlim([0.6, 0.81])
+plt.xlim([0.69, 0.75])
 plt.tight_layout()
 plt.savefig('figures/goss-bootstrap-ci-histo.svg')
 # plt.show()
