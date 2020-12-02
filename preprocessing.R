@@ -30,7 +30,7 @@ pitches_2019$description <- factor(pitches_2019$description,
                                             "foul_tip", "blocked_ball", "hit_by_pitch", "foul_bunt", "missed_bunt", 
                                             "bunt_foul_tip", "pitchout"),
                                    labels = c("hit", "strike", "strike", "ball", "hit", "strike", "hit", "hit",
-                                              "hit", "strike", "hit_by_pitch", "strike", "strike", "strike", "strike"))
+                                              "hit", "ball", "hit_by_pitch", "strike", "strike", "strike", "ball"))
 
 # Filter out hit-by-pitch incidents
 pitches_2019 <- pitches_2019 %>%
