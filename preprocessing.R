@@ -25,10 +25,10 @@ pitches_2019 %<>%
 
 # Convert the descriptions to strike/ball/hit/hit by pitch factors
 pitches_2019$description <- factor(pitches_2019$description,
-                                   levels = "hit_into_play", "called_strike", "swinging_strike_blocked", "ball", 
+                                   levels = c("hit_into_play", "called_strike", "swinging_strike_blocked", "ball", 
                                             "foul", "swinging_strike", "hit_into_play_score", "hit_into_play_no_out", 
                                             "foul_tip", "blocked_ball", "hit_by_pitch", "foul_bunt", "missed_bunt", 
-                                            "bunt_foul_tip", "pitchout",
+                                            "bunt_foul_tip", "pitchout"),
                                    labels = c("hit", "strike", "strike", "ball", "hit", "strike", "hit", "hit",
                                               "hit", "strike", "hit_by_pitch", "strike", "strike", "strike", "strike"))
 
