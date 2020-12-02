@@ -1,8 +1,10 @@
 import pandas as pd
 import numpy as np
 import lightgbm as lgb
+import time
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import RandomizedSearchCV
+from sklearn.model_selection import GridSearchCV
 from sklearn.preprocessing import Normalizer
 from joblib import dump
 from scipy.stats import uniform, randint
@@ -26,34 +28,82 @@ X = df.values
 
 print(df.columns)
 
-X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=.3,stratify=y,random_state=123)
+X_train_temp, X_test, y_train_temp, y_test = train_test_split(X,y,test_size=.8,stratify=y,random_state=123)
+X_train, X_valid, y_train, y_valid = train_test_split(X,y,test_size=.3,stratify=y,random_state=1415)
 
-model_params = {
-    'num_leaves': randint(5, 500),
-    'max_depth': [-1, 50, 100, 1000, 2000],
-    'learning_rate': uniform(.001, 1),
-    'num_iterations': [200, 500, 1000, 10000, 20000],
-    'min_split_gain': [0, .001, .01, .1, .2, .3],
-    'subsample': [.1, .3, .5, .8, 1],
-    'n_iter_no_change':[15, 30, 45, 60, 100],
-    'importance_type': ['split', 'gain']
-}
-model = lgb.LGBMClassifier(class_weight='balanced', random_state=42, n_jobs=-1, silent=True)
-paramSearchCV = RandomizedSearchCV(estimator=model, param_distributions=model_params, n_iter=500, n_jobs=-1, cv=3)
+# model_params = {
+#     'objective': ['multiclass', 'multiclassova'],
+#     'tree_learner': ['serial', 'data', 'voting']
+# }
 
-print("Searching for best params (500 iter) ...")
+model = lgb.LGBMClassifier(num_class=3, class_weight='balanced', importance_type='gain', min_split_gain=.25, num_leaves=100, learning_rate=.01, subsample=.9, subsample_freq=1, feature_fraction=.9, lambda_l1=1.545, lambda_l2=.215, n_iter_no_change=60, num_iterations=10000, max_depth=2000, random_state=42, n_jobs=-1, silent=True)
+# model = lgb.LGBMClassifier(device_type='gpu', gpu_use_dp=True, num_class=3, boosting_type='gbdt', class_weight='balanced', importance_type='gain', subsample=.9, subsample_freq=1, feature_fraction=.9, random_state=42, n_jobs=1, silent=True)
 
-paramSearchCV.fit(X_train[1:200000], y_train[1:200000], eval_set=(X_test, y_test))
-print("Best score: %s" % paramSearchCV.best_score_)
-print("Best params: %s" % paramSearchCV.best_params_)
+# # paramSearchCV = RandomizedSearchCV(estimator=model, param_distributions=model_params, n_jobs=-1, cv=3)
+# paramSearchCV = GridSearchCV(estimator=model, param_grid=model_params, n_jobs=-1, cv=3)
 
-best_model = model.set_params(**paramSearchCV.best_params_)
 
-print("Fitting best model (all records) ... ")
-best_model.fit(X_train, y_train, eval_set=(X_test, y_test))
+# print("Searching for best params (6? iter) ...")
 
-print("Best model score: %s" % best_model.score(X_test, y_test))
-print("Best model params: %s" % best_model.get_params)
+# paramSearchCV.fit(X_train[1:20000], y_train[1:20000], eval_set=(X_valid, y_valid))
+# print("Best score: %s" % paramSearchCV.best_score_)
+# print("Best params: %s" % paramSearchCV.best_params_)
 
-dump(paramSearchCV, filename='reduced_lgbm.randcv.joblib')
-dump(best_model, filename='reduced_lgbm.bestlgbm.joblib')
+# best_model = model.set_params(**paramSearchCV.best_params_)
+best_model = model
+
+# print("Fitting best model (all records) ... ")
+# best_model.fit(X_train_temp, y_train_temp, eval_set=(X_valid, y_valid))
+
+# print("Best model score: %s" % best_model.score(X_test, y_test))
+# print("Best model params: %s" % best_model.get_params)
+
+
+
+
+bootstrap_train_accuracies = []
+
+idx = np.arange(y_train_temp.shape[0])
+rng = np.random.RandomState(seed=12345)
+start_bootstrap = time.perf_counter()
+for i in range(100):
+    train_idx = rng.choice(idx, size=idx.shape[0], replace=True)
+    test_idx = np.setdiff1d(idx, train_idx, assume_unique=False)
+    
+    boot_train_X, boot_train_y = X_train_temp[train_idx], y_train_temp[train_idx]
+    boot_test_X, boot_test_y = X_train_temp[test_idx], y_train_temp[test_idx]
+    
+    best_model.fit(boot_train_X, boot_train_y, eval_set=(X_valid, y_valid))
+
+    bootstrap_train_accuracies.append(best_model.score(boot_test_X, boot_test_y))
+end_bootstrap = time.perf_counter()
+print(f"100 rounds bootstrap optimized LGBM took {end_bootstrap - start_bootstrap:0.4f} seconds")
+print(f"Avg: {(end_bootstrap - start_bootstrap)/100.0:0.4f} seconds")
+
+
+bootstrap_percentile_lower = np.percentile(bootstrap_train_accuracies, 2.5)
+bootstrap_percentile_upper = np.percentile(bootstrap_train_accuracies, 97.5)
+print("95% Bootstrap CI:")
+print(bootstrap_percentile_lower, bootstrap_percentile_upper)
+print("Mean: ", bootstrap_train_mean)
+
+
+fig, ax = plt.subplots(figsize=(8, 4))
+ax.vlines( bootstrap_train_mean, [0], 80, lw=2.5, linestyle='-', label='bootstrap train mean')
+ax.vlines(bootstrap_percentile_upper, [0], 15, lw=2.5, linestyle='dashed', 
+          label='CI95 bootstrap, percentile', color='C1')
+ax.vlines(bootstrap_percentile_lower, [0], 15, lw=2.5, linestyle='dashed', color='C1')
+
+ax.hist(bootstrap_train_accuracies, bins=7,
+        color='#0080ff', edgecolor="none", 
+        alpha=0.3)
+plt.legend(loc='upper left')
+plt.xlim([0.69, 0.75])
+plt.tight_layout()
+plt.savefig('figures/lgbm-tuned-bootstrap-ci-histo.svg')
+# plt.show()
+plt.clf()
+
+
+# dump(paramSearchCV, filename='reduced_lgbm.randcv.joblib')
+# dump(best_model, filename='reduced_lgbm.bestlgbm.joblib')
